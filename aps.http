@@ -1,0 +1,41 @@
+# APS Viewer Sample Endpoints
+# Reference: LLMS-FULL.TXT, lines 4267-4309
+# "Sample Models for testing Viewer SDK in .http format"
+# Use with the REST Client extension for VS Code
+
+### Get Token
+# @name getToken
+GET https://aps-codepen.autodesk.io/api/token
+Content-Type: application/json
+
+# Response will store access_token in variable: {{getToken.response.body.access_token}}
+
+# Expected JSON response:
+# {
+#   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "token_type": "Bearer",
+#   "expires_in": 3600
+# }
+
+###
+
+### List Models
+# @name listModels
+GET https://aps-codepen.autodesk.io/api/models
+Content-Type: application/json
+
+# No authentication required
+
+# Expected JSON response:
+# [
+#   {
+#     "name": "House Model",
+#     "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6YnVja2V0L2ZpbGUuZHdm"
+#   },
+#   {
+#     "name": "Office Building",
+#     "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6YnVja2V0L2ZpbGUucnZ0"
+#   }
+# ]
+
+###

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APS Viewer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- APS Viewer SDK stylesheet -->
+  <link rel="stylesheet" href="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.min.css" />
+  <!-- Material Icons (used by the Viewer toolbar) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <style>
+    /* Viewer must have explicit dimensions */
+    #viewer { width: 100%; height: 100%; }
+  </style>
+</head>
+<body class="flex flex-col h-screen bg-gray-100 overflow-hidden">
+
+  <!-- Navbar -->
+  <nav class="flex-none h-14 bg-white shadow-sm flex items-center px-6 gap-4 z-10">
+    <span class="text-base font-semibold text-gray-800 tracking-tight">APS Viewer</span>
+    <div class="ml-auto flex items-center gap-3">
+      <label for="model-select" class="text-sm font-medium text-gray-600 whitespace-nowrap">
+        Choose a model
+      </label>
+      <select
+        id="model-select"
+        class="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white text-gray-700
+               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+               disabled:opacity-50 disabled:cursor-not-allowed min-w-48"
+        disabled
+      >
+        <option value="">Loading models…</option>
+      </select>
+    </div>
+  </nav>
+
+  <!-- Viewer container fills remaining height -->
+  <div class="flex-1 relative">
+    <div id="viewer"></div>
+  </div>
+
+  <!-- APS Viewer SDK — must be a regular script (attaches to window.Autodesk) -->
+  <script src="https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js"></script>
+  <!-- App logic — type="module" is deferred, so viewer SDK is already loaded -->
+  <script type="module" src="/app.mjs"></script>
+</body>
+</html>
