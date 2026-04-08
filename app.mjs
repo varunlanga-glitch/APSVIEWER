@@ -4,28 +4,27 @@ const AV = Autodesk.Viewing;
 /** @type {Autodesk.Viewing.GuiViewer3D|null} */
 let viewer = null;
 
+const select = document.getElementById('model-select');
+
 /**
  * Fetch a 2-legged access token from the backend.
- * Proxied by Vite from /api/token → https://aps-codepen.autodesk.io/api/token
+ * Proxied by Vite (dev) or Cloudflare Pages Function (production).
  * @returns {Promise<string>} access_token
  */
 async function getToken() {
   const res = await fetch('/api/token');
-  if (!res.ok) throw new Error(`Token request failed: ${res.status}`);
-  // Expected: { access_token: "...", token_type: "Bearer", expires_in: 3600 }
+  if (!res.ok) throw new Error(`/api/token returned ${res.status}`);
   const { access_token } = await res.json();
   return access_token;
 }
 
 /**
  * Fetch the list of sample models from the backend.
- * Proxied by Vite from /api/models → https://aps-codepen.autodesk.io/api/models
  * @returns {Promise<Array<{name: string, urn: string}>>}
  */
 async function listModels() {
   const res = await fetch('/api/models');
-  if (!res.ok) throw new Error(`Models request failed: ${res.status}`);
-  // Expected: [{ name: "House Model", urn: "dXJu..." }, ...]
+  if (!res.ok) throw new Error(`/api/models returned ${res.status}`);
   return res.json();
 }
 
@@ -43,7 +42,7 @@ function initViewer(token) {
         const v = new AV.GuiViewer3D(container);
         const startCode = v.start();
         if (startCode > 0) {
-          reject(new Error(`Viewer start failed with code ${startCode}`));
+          reject(new Error(`Viewer start failed (code ${startCode})`));
           return;
         }
         v.setTheme('light-theme');
@@ -66,8 +65,25 @@ function loadModel(urn) {
     },
     (errorCode, errorMsg) => {
       console.error('Document load error:', errorCode, errorMsg);
+      showError(`Failed to load model (code ${errorCode})`);
     }
   );
+}
+
+/**
+ * Show an error banner below the navbar.
+ * @param {string} msg
+ */
+function showError(msg) {
+  const existing = document.getElementById('error-banner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'error-banner';
+  banner.style.cssText =
+    'position:fixed;top:56px;left:0;right:0;background:#ef4444;color:#fff;' +
+    'padding:8px 16px;font-size:13px;font-family:sans-serif;z-index:9999;';
+  banner.textContent = `⚠ ${msg} — open the browser console (F12) for details.`;
+  document.body.appendChild(banner);
 }
 
 /**
@@ -75,7 +91,6 @@ function loadModel(urn) {
  * @param {Array<{name: string, urn: string}>} models
  */
 function populateDropdown(models) {
-  const select = document.getElementById('model-select');
   select.innerHTML = '<option value="">— Select a model —</option>';
   for (const { name, urn } of models) {
     const opt = document.createElement('option');
@@ -90,12 +105,34 @@ function populateDropdown(models) {
 }
 
 async function init() {
-  // Fetch token and model list in parallel — no dependency between them
-  const [token, models] = await Promise.all([getToken(), listModels()]);
-  viewer = await initViewer(token);
-  populateDropdown(models);
+  // Run both fetches in parallel; use allSettled so one failure doesn't kill the other
+  const [tokenResult, modelsResult] = await Promise.allSettled([
+    getToken(),
+    listModels(),
+  ]);
+
+  // Populate dropdown regardless of token/viewer status
+  if (modelsResult.status === 'fulfilled') {
+    populateDropdown(modelsResult.value);
+  } else {
+    console.error('Models fetch failed:', modelsResult.reason);
+    select.innerHTML = '<option value="">Failed to load models</option>';
+    select.disabled = false;
+    showError(modelsResult.reason.message);
+  }
+
+  // Initialize viewer independently of models
+  if (tokenResult.status === 'fulfilled') {
+    try {
+      viewer = await initViewer(tokenResult.value);
+    } catch (err) {
+      console.error('Viewer init failed:', err);
+      showError(err.message);
+    }
+  } else {
+    console.error('Token fetch failed:', tokenResult.reason);
+    showError(tokenResult.reason.message);
+  }
 }
 
-init().catch((err) => {
-  console.error('Initialization failed:', err);
-});
+init();
